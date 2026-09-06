@@ -1,0 +1,88 @@
+rules_version = '2';
+
+// CAIWP MQA Assessment Dashboard — Firestore Security Rules
+//
+// Design principle: candidates never receive the answer key, and can never
+// write the fields that determine their own score or pass/fail result.
+// Grading, attempt-limit enforcement, and all administrative mutations
+// happen exclusively in Cloud Functions using the Admin SDK (which bypasses
+// these rules entirely). These rules therefore:
+//   1. Deny client writes to `users`, `user_summaries`, `answer_keys`, and
+//      `activity_logs` (except a small allow-list of low-stakes event types).
+//   2. Deny client *creation* of `attempts` (must go through startAttempt()).
+//   3. Allow a candidate to update ONLY the live-progress fields of their
+//      OWN in-progress attempt (for real-time admin visibility), and never
+//      the score/result/status fields.
+//   4. Grant admins (custom claim `admin: true`, set only by Cloud
+//      Functions after checking the server-side admin_allowlist) read
+//      access across candidates for monitoring/reporting.
+
+function isSignedIn() {
+  return request.auth != null;
+}
+
+function isAdmin() {
+  return isSignedIn() && request.auth.token.admin == true;
+}
+
+function isOwner(uid) {
+  return isSignedIn() && request.auth.uid == uid;
+}
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if false; // written only via Cloud Functions (auth trigger + updateProfile)
+    }
+
+    match /user_summaries/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if false; // written only via Cloud Functions
+    }
+
+    match /admin_allowlist/{email} {
+      allow read, write: if false; // server-side only
+    }
+
+    match /assessments/{assessmentId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+
+      match /questions/{questionId} {
+        allow read: if isSignedIn();
+        allow write: if false;
+      }
+    }
+
+    match /answer_keys/{assessmentId}/keys/{questionId} {
+      allow read, write: if false; // Admin SDK only, never exposed to clients
+    }
+
+    match /attempts/{attemptId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if false; // must go through the startAttempt() Cloud Function
+      allow update: if isSignedIn()
+                    && resource.data.userId == request.auth.uid
+                    && resource.data.status == 'in_progress'
+                    && request.resource.data.status == 'in_progress'
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['currentQuestionIndex', 'answeredCount', 'flaggedQuestions', 'answers', 'lastActivityAt']);
+      allow delete: if false;
+
+      match /review/{questionId} {
+        allow read: if isSignedIn() && (get(/databases/$(database)/documents/attempts/$(attemptId)).data.userId == request.auth.uid || isAdmin());
+        allow write: if false;
+      }
+    }
+
+    match /activity_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && request.resource.data.eventType in ['LOGIN', 'LOGOUT', 'PROFILE_SETUP', 'ANSWER', 'QUESTION_CHANGED', 'QUESTION_FLAGGED'];
+      allow update, delete: if false;
+    }
+  }
+}
