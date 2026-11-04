@@ -11,6 +11,8 @@ interface ImportMetaEnv {
   readonly VITE_USE_EMULATORS?: string;
   /** Build for a sandboxed frame: exports open in the in-app viewer. */
   readonly VITE_EMBEDDED?: string;
+  /** Demo Mode: start an admin session with sample students, teams and scores. */
+  readonly VITE_DEMO_AUTOSEED?: string;
 }
 
 interface ImportMeta {

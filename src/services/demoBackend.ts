@@ -111,8 +111,8 @@ class DemoBackend implements Backend {
       this.log(user, 'LOGIN', 'Signed in via Demo Mode (Google Sign-In simulated)');
     } else {
       this.log(user, 'ADMIN_LOGIN', 'Admin signed in via Demo Mode');
-      // In the shareable embedded demo, start with sample students so there is something to grade.
-      if (EMBEDDED && this.summaries.all().length === 0) void this.seedDemoTraffic(16).then(() => this.seedDemoGrading());
+      // In shareable demos (embedded page, GitHub Pages), start with sample students and teams to grade.
+      if ((EMBEDDED || import.meta.env.VITE_DEMO_AUTOSEED === 'true') && this.summaries.all().length === 0) void this.seedDemoTraffic(16).then(() => this.seedDemoGrading());
     }
   }
 
@@ -549,7 +549,7 @@ class DemoBackend implements Backend {
   }
 
   /**
-   * Embedded demo only: create the 4 Island Takeover teams and sample score
+   * Shareable demos only: create the 4 Island Takeover teams and sample score
    * sheets from two sample judges for the first three teams, so the grading
    * dashboard has something to show. The fourth team is left for the coach.
    */
