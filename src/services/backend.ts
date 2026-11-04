@@ -6,6 +6,8 @@ import type {
   QuestionReview,
   ActivityLog,
   ModuleStat,
+  CapstoneTeam,
+  CapstoneScore,
 } from '../types';
 
 export type Unsubscribe = () => void;
@@ -83,4 +85,17 @@ export interface Backend {
   resetAttempts(targetUid: string): Promise<void>;
   setCandidateDisabled(targetUid: string, disabled: boolean): Promise<void>;
   seedDemoTraffic(count: number): Promise<void>;
+
+  // --- Group capstone grading (admin) ---------------------------------
+  subscribeTeams(cb: (list: CapstoneTeam[]) => void): Unsubscribe;
+  /** Teams the given candidate belongs to (candidate-readable). */
+  subscribeMyTeams(uid: string, cb: (list: CapstoneTeam[]) => void): Unsubscribe;
+  /** Create (no id) or update a team. Returns the team id. */
+  saveTeam(team: Partial<CapstoneTeam> & { id?: string }): Promise<string>;
+  deleteTeam(teamId: string): Promise<void>;
+  subscribeCapstoneScores(cb: (list: CapstoneScore[]) => void): Unsubscribe;
+  saveCapstoneScore(score: Omit<CapstoneScore, 'id' | 'updatedAt'>): Promise<void>;
+  deleteCapstoneScore(scoreId: string): Promise<void>;
 }
+
+export const capstoneScoreId = (teamId: string, judgeUid: string) => `${teamId}__${judgeUid}`;

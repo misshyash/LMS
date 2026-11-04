@@ -129,3 +129,59 @@ export const DEFAULT_ASSESSMENT_ID = 'caiwp-mqa-v1';
 export const TOTAL_QUESTIONS = 30;
 export const PASSING_PERCENTAGE = 75;
 export const MAX_ATTEMPTS = 3;
+
+// ---------------------------------------------------------------------------
+// Group capstone grading (CAIWP Day 5 Marking Scheme)
+// ---------------------------------------------------------------------------
+
+export interface CapstoneTeam {
+  id: string;
+  name: string; // e.g. "Group 1"
+  project: string; // project title, e.g. "Langkawi – Luxury + Fun Combo"
+  batch: string | null;
+  memberUids: string[];
+  /** Submission links (deck/PDF, video, prototype, feedback form, other). */
+  links: CapstoneLinks;
+  /** Original proposed budget (RM) — used for the 20% budget-cut challenge. */
+  originalBudget: number | null;
+  /** When true, members can see their capstone and combined result. */
+  published: boolean;
+  /** Averaged raw capstone score captured at publish time (out of 100). */
+  publishedRaw: number | null;
+  publishedAt: number | null;
+  createdAt: number | null;
+}
+
+export interface CapstoneLinks {
+  deck: string; // slide deck or PDF (Google Drive / OneDrive / Canva share link)
+  video: string;
+  prototype: string;
+  feedback: string;
+  other: string;
+}
+
+export const EMPTY_LINKS: CapstoneLinks = { deck: '', video: '', prototype: '', feedback: '', other: '' };
+
+/** One judge's score sheet for one team. Doc id = `${teamId}__${judgeUid}`. */
+export interface CapstoneScore {
+  id: string;
+  teamId: string;
+  judgeUid: string;
+  judgeName: string;
+  /** rubric sub-item id -> awarded marks (0..max in 0.5 steps). */
+  items: Record<string, number>;
+  demoChecks: Record<string, boolean>;
+  submissionChecks: Record<string, boolean>;
+  pitchElements: Record<string, boolean>;
+  videoDuration: string;
+  feedbackResponses: number | null;
+  presentationTime: string;
+  challenge: string;
+  teamResponse: string;
+  strongestEvidence: string;
+  priorityImprovement: string;
+  nextStep: string;
+  strength: string;
+  improvement: string;
+  updatedAt: number | null;
+}

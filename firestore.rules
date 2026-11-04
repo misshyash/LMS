@@ -77,6 +77,23 @@ service cloud.firestore {
       }
     }
 
+    // Group capstone grading (CAIWP Day 5 Marking Scheme).
+    // Admins create teams and enter judge score sheets directly from the
+    // dashboard. A candidate may read only the team doc(s) they belong to,
+    // which carry the published (averaged) capstone raw score.
+    match /capstone_teams/{teamId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid in resource.data.memberUids);
+      allow write: if isAdmin();
+    }
+
+    match /capstone_scores/{scoreId} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin()
+                            && request.resource.data.judgeUid == request.auth.uid
+                            && scoreId == request.resource.data.teamId + '__' + request.auth.uid;
+      allow delete: if isAdmin();
+    }
+
     match /activity_logs/{logId} {
       allow read: if isAdmin();
       allow create: if isSignedIn()

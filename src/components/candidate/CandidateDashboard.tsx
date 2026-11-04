@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthProvider';
 import { backend } from '../../services';
-import type { Attempt } from '../../types';
+import type { Attempt, CapstoneTeam } from '../../types';
 import { TOTAL_QUESTIONS, MAX_ATTEMPTS, PASSING_PERCENTAGE } from '../../types';
 import { formatDate } from '../../utils/time';
+import { FinalResultCard } from './FinalResultCard';
+import { AiGraderLauncher } from '../shared/AiGraderGuide';
 
 interface Props {
   onStarted: (attemptId: string) => void;
@@ -21,6 +23,12 @@ export const CandidateDashboard: React.FC<Props> = ({ onStarted }) => {
   const [attempts, setAttempts] = useState<Attempt[]>([]);
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [myTeam, setMyTeam] = useState<CapstoneTeam | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    return backend.subscribeMyTeams(user.uid, (t) => setMyTeam(t[0] ?? null));
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -103,6 +111,19 @@ export const CandidateDashboard: React.FC<Props> = ({ onStarted }) => {
           accent={summary.passed ? 'border-emerald-500' : 'border-slate-300'}
         />
       </div>
+
+      <div className="glass rounded-[2.5rem] p-6 shadow-lg flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="text-4xl">🤖</div>
+          <div>
+            <p className="text-sm font-black text-slate-900 dark:text-white">How will I be graded?</p>
+            <p className="text-xs font-bold text-slate-500">Your AI grader explains the questions, the marking and the pass rule — with voice.</p>
+          </div>
+        </div>
+        <AiGraderLauncher label="▶ Meet your AI Grader" participant={{ name: user.name, batch: profile.batch, team: myTeam?.name, project: myTeam?.project }} />
+      </div>
+
+      <FinalResultCard uid={user.uid} summary={summary} />
 
       <div className="glass rounded-[2.5rem] p-8 shadow-lg border-l-[8px] border-trainito-teal">
         <h3 className="text-xl font-black mb-2 dark:text-white uppercase tracking-tight">CAIWP MQA Assessment</h3>

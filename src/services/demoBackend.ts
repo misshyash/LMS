@@ -7,8 +7,10 @@ import type {
   ActivityLog,
   ModuleStat,
   EventType,
+  CapstoneTeam,
+  CapstoneScore,
 } from '../types';
-import { TOTAL_QUESTIONS, MAX_ATTEMPTS, PASSING_PERCENTAGE, BATCHES } from '../types';
+import { TOTAL_QUESTIONS, MAX_ATTEMPTS, PASSING_PERCENTAGE, BATCHES, EMPTY_LINKS } from '../types';
 import { DEMO_QUESTIONS } from '../data/demoQuestionBank';
 import { ReactiveStore } from './reactiveStore';
 import type {
@@ -20,6 +22,7 @@ import type {
   SubmitAttemptResult,
   ProgressPatch,
 } from './backend';
+import { capstoneScoreId } from './backend';
 
 // ---------------------------------------------------------------------------
 // Demo Mode backend: a fully in-memory simulation of the real Firebase
@@ -55,6 +58,9 @@ class DemoBackend implements Backend {
   private auditListeners = new Set<() => void>();
   private moduleStats = new ReactiveStore<ModuleStat>();
   private simTimer: ReturnType<typeof setInterval> | null = null;
+  private teams = new ReactiveStore<CapstoneTeam>();
+  private capstoneScores = new ReactiveStore<CapstoneScore>();
+  private teamCounter = 0;
 
   // --- auth -----------------------------------------------------------
   subscribeAuthUser(cb: (user: AuthUser | null) => void): Unsubscribe {
@@ -480,6 +486,62 @@ class DemoBackend implements Backend {
     }
 
     this.startLiveSimulation();
+  }
+
+  // --- group capstone grading ---------------------------------------------
+  subscribeTeams(cb: (list: CapstoneTeam[]) => void): Unsubscribe {
+    const push = () => cb(this.teams.all().sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })));
+    push();
+    return this.teams.subscribe(push);
+  }
+
+  subscribeMyTeams(uid: string, cb: (list: CapstoneTeam[]) => void): Unsubscribe {
+    const push = () => cb(this.teams.all().filter((t) => t.memberUids.includes(uid)));
+    push();
+    return this.teams.subscribe(push);
+  }
+
+  async saveTeam(team: Partial<CapstoneTeam> & { id?: string }): Promise<string> {
+    if (team.id && this.teams.get(team.id)) {
+      const { id, ...patch } = team;
+      this.teams.update(id, patch);
+      return id;
+    }
+    const id = team.id ?? `demo-team-${++this.teamCounter}`;
+    this.teams.set(id, {
+      id,
+      name: team.name ?? 'New Team',
+      project: team.project ?? '',
+      links: { ...EMPTY_LINKS, ...(team.links ?? {}) },
+      batch: team.batch ?? null,
+      memberUids: team.memberUids ?? [],
+      originalBudget: team.originalBudget ?? null,
+      published: team.published ?? false,
+      publishedRaw: team.publishedRaw ?? null,
+      publishedAt: team.publishedAt ?? null,
+      createdAt: Date.now(),
+    });
+    return id;
+  }
+
+  async deleteTeam(teamId: string): Promise<void> {
+    this.teams.delete(teamId);
+    this.capstoneScores.all().filter((s) => s.teamId === teamId).forEach((s) => this.capstoneScores.delete(s.id));
+  }
+
+  subscribeCapstoneScores(cb: (list: CapstoneScore[]) => void): Unsubscribe {
+    const push = () => cb(this.capstoneScores.all());
+    push();
+    return this.capstoneScores.subscribe(push);
+  }
+
+  async saveCapstoneScore(score: Omit<CapstoneScore, 'id' | 'updatedAt'>): Promise<void> {
+    const id = capstoneScoreId(score.teamId, score.judgeUid);
+    this.capstoneScores.set(id, { ...score, id, updatedAt: Date.now() });
+  }
+
+  async deleteCapstoneScore(scoreId: string): Promise<void> {
+    this.capstoneScores.delete(scoreId);
   }
 
   private startLiveSimulation() {

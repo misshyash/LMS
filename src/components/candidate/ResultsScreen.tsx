@@ -39,7 +39,11 @@ export const ResultsScreen: React.FC<Props> = ({ attemptId, onBackToDashboard })
         <div className="text-7xl font-black text-slate-900 dark:text-white tabular-nums tracking-tighter leading-none mb-4">
           {attempt.score} <span className="text-3xl text-slate-300">/ {TOTAL_QUESTIONS}</span>
         </div>
-        <p className="text-lg font-black text-slate-500 mb-6">{attempt.percentage}%</p>
+        <p className="text-lg font-black text-slate-500 mb-2">{attempt.percentage}%</p>
+        <p className="text-xs font-bold text-slate-400 mb-6">
+          Theory contribution: {(((attempt.score ?? 0) / TOTAL_QUESTIONS) * 40).toFixed(2)} / 40 · your final result combines this with your
+          group capstone (60)
+        </p>
         <div
           className={`inline-block px-6 py-2 rounded-full font-black uppercase tracking-widest text-sm ${
             passed ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'

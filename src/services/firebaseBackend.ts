@@ -16,12 +16,17 @@ import {
   getDocs,
   updateDoc,
   addDoc,
+  setDoc,
+  deleteDoc,
+  writeBatch,
+  serverTimestamp,
   Timestamp,
   type DocumentData,
   type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { auth, db, functions, googleProvider } from '../firebase';
+import { EMPTY_LINKS } from '../types';
 import type {
   Attempt,
   UserProfile,
@@ -31,6 +36,8 @@ import type {
   ActivityLog,
   ModuleStat,
   EventType,
+  CapstoneTeam,
+  CapstoneScore,
 } from '../types';
 import type {
   Backend,
@@ -41,6 +48,7 @@ import type {
   SubmitAttemptResult,
   ProgressPatch,
 } from './backend';
+import { capstoneScoreId } from './backend';
 
 function toMillis(v: unknown): number | null {
   if (v == null) return null;
@@ -134,6 +142,48 @@ function toActivityLog(snap: QueryDocumentSnapshot<DocumentData>): ActivityLog {
     details: d.details,
     device: d.device,
     attemptId: d.attemptId,
+  };
+}
+
+function toTeam(snap: QueryDocumentSnapshot<DocumentData>): CapstoneTeam {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    name: d.name ?? '',
+    project: d.project ?? '',
+    links: { ...EMPTY_LINKS, ...(d.links ?? {}) },
+    batch: d.batch ?? null,
+    memberUids: d.memberUids ?? [],
+    originalBudget: d.originalBudget ?? null,
+    published: Boolean(d.published),
+    publishedRaw: d.publishedRaw ?? null,
+    publishedAt: toMillis(d.publishedAt),
+    createdAt: toMillis(d.createdAt),
+  };
+}
+
+function toCapstoneScore(snap: QueryDocumentSnapshot<DocumentData>): CapstoneScore {
+  const d = snap.data();
+  return {
+    id: snap.id,
+    teamId: d.teamId,
+    judgeUid: d.judgeUid,
+    judgeName: d.judgeName ?? '',
+    items: d.items ?? {},
+    demoChecks: d.demoChecks ?? {},
+    submissionChecks: d.submissionChecks ?? {},
+    pitchElements: d.pitchElements ?? {},
+    videoDuration: d.videoDuration ?? '',
+    feedbackResponses: d.feedbackResponses ?? null,
+    presentationTime: d.presentationTime ?? '',
+    challenge: d.challenge ?? '',
+    teamResponse: d.teamResponse ?? '',
+    strongestEvidence: d.strongestEvidence ?? '',
+    priorityImprovement: d.priorityImprovement ?? '',
+    nextStep: d.nextStep ?? '',
+    strength: d.strength ?? '',
+    improvement: d.improvement ?? '',
+    updatedAt: toMillis(d.updatedAt),
   };
 }
 
@@ -321,6 +371,67 @@ class FirebaseBackend implements Backend {
 
   async seedDemoTraffic(count: number): Promise<void> {
     await httpsCallable(this.call!, 'seedDemoTraffic')({ count });
+  }
+
+  // --- group capstone grading ---------------------------------------------
+  // Teams and score sheets are written directly by admins (enforced by
+  // firestore.rules: only `admin == true` tokens may write). Candidates may
+  // read only the team docs that list them as a member.
+
+  subscribeTeams(cb: (list: CapstoneTeam[]) => void): Unsubscribe {
+    return onSnapshot(collection(db!, 'capstone_teams'), (snap) =>
+      cb(snap.docs.map(toTeam).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })))
+    );
+  }
+
+  subscribeMyTeams(uid: string, cb: (list: CapstoneTeam[]) => void): Unsubscribe {
+    const q = query(collection(db!, 'capstone_teams'), where('memberUids', 'array-contains', uid));
+    return onSnapshot(q, (snap) => cb(snap.docs.map(toTeam)), () => cb([]));
+  }
+
+  async saveTeam(team: Partial<CapstoneTeam> & { id?: string }): Promise<string> {
+    const { id, createdAt: _c, publishedAt, ...rest } = team;
+    const data: Record<string, unknown> = { ...rest };
+    if (publishedAt !== undefined) data.publishedAt = publishedAt === null ? null : Timestamp.fromMillis(publishedAt);
+    if (id) {
+      await setDoc(doc(db!, 'capstone_teams', id), data, { merge: true });
+      return id;
+    }
+    const ref = await addDoc(collection(db!, 'capstone_teams'), {
+      name: 'New Team',
+      project: '',
+      links: EMPTY_LINKS,
+      batch: null,
+      memberUids: [],
+      originalBudget: null,
+      published: false,
+      publishedRaw: null,
+      publishedAt: null,
+      ...data,
+      createdAt: serverTimestamp(),
+    });
+    return ref.id;
+  }
+
+  async deleteTeam(teamId: string): Promise<void> {
+    const scores = await getDocs(query(collection(db!, 'capstone_scores'), where('teamId', '==', teamId)));
+    const batch = writeBatch(db!);
+    scores.docs.forEach((d) => batch.delete(d.ref));
+    batch.delete(doc(db!, 'capstone_teams', teamId));
+    await batch.commit();
+  }
+
+  subscribeCapstoneScores(cb: (list: CapstoneScore[]) => void): Unsubscribe {
+    return onSnapshot(collection(db!, 'capstone_scores'), (snap) => cb(snap.docs.map(toCapstoneScore)));
+  }
+
+  async saveCapstoneScore(score: Omit<CapstoneScore, 'id' | 'updatedAt'>): Promise<void> {
+    const id = capstoneScoreId(score.teamId, score.judgeUid);
+    await setDoc(doc(db!, 'capstone_scores', id), { ...score, updatedAt: serverTimestamp() });
+  }
+
+  async deleteCapstoneScore(scoreId: string): Promise<void> {
+    await deleteDoc(doc(db!, 'capstone_scores', scoreId));
   }
 }
 
