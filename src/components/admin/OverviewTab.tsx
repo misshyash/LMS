@@ -14,7 +14,7 @@ const KPI: React.FC<{ label: string; value: React.ReactNode; accent: string }> =
   </div>
 );
 
-const PIE_COLORS = ['#10b981', '#f04434'];
+const PIE_COLORS = ['#059669', '#e11d48'];
 
 export const OverviewTab: React.FC<Props> = ({ summaries, moduleStats }) => {
   const stats = useMemo(() => {
@@ -87,7 +87,7 @@ export const OverviewTab: React.FC<Props> = ({ summaries, moduleStats }) => {
                 <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v: number) => `${v}%`} labelFormatter={(l, p) => p?.[0]?.payload?.fullName ?? l} />
-                <Bar dataKey="percentage" fill="#66c2bd" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="percentage" fill="#5c8a3f" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

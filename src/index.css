@@ -3,26 +3,51 @@
 @tailwind utilities;
 
 :root {
-  --brand-teal: #66c2bd;
-  --brand-coral: #f04434;
+  --brand-teal: #5c8a3f; /* matcha */
+  --brand-coral: #e8678e; /* strawberry */
+  --sm-bg: #fff4f6;
+  --sm-dot-pink: rgba(232, 103, 142, 0.14);
+  --sm-dot-green: rgba(92, 138, 63, 0.12);
+  --sm-card: rgba(255, 255, 255, 0.82);
+  --sm-card-border: #f6d6df;
+  --sm-card-shadow: 0 10px 30px -12px rgba(209, 77, 118, 0.25);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --sm-bg: #1c1418;
+    --sm-dot-pink: rgba(232, 103, 142, 0.1);
+    --sm-dot-green: rgba(134, 179, 95, 0.08);
+    --sm-card: rgba(43, 31, 37, 0.78);
+    --sm-card-border: rgba(245, 122, 155, 0.14);
+    --sm-card-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+  }
 }
 
+/* Matcha text needs a lighter step to stay readable on cocoa surfaces. */
+@media (prefers-color-scheme: dark) {
+  .text-trainito-teal { color: #a6cb86; }
+}
+
+/* Strawberry-milk background with matcha + strawberry polka dots. */
 body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'M PLUS Rounded 1c', 'Nunito', ui-rounded, system-ui, sans-serif;
+  background-color: var(--sm-bg);
+  background-image: radial-gradient(var(--sm-dot-pink) 2px, transparent 2.5px),
+    radial-gradient(var(--sm-dot-green) 2px, transparent 2.5px);
+  background-size: 36px 36px;
+  background-position: 0 0, 18px 18px;
+  background-attachment: fixed;
 }
 
 .glass {
-  backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.7);
-}
-.dark .glass {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  background: var(--sm-card);
+  border: 2px solid var(--sm-card-border);
+  box-shadow: var(--sm-card-shadow);
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, var(--brand-teal), #4361ee);
+  background: linear-gradient(135deg, var(--brand-coral), var(--brand-teal));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -49,4 +74,41 @@ body {
   100% {
     transform: translateX(100%) rotate(45deg);
   }
+}
+
+/* ---------------------------------------------------------------------------
+   Flying butterflies 🦋 (see components/shared/Butterflies.tsx)
+   --------------------------------------------------------------------------- */
+.bf-layer { position: fixed; inset: 0; pointer-events: none; z-index: 35; overflow: hidden; }
+.bf { position: absolute; top: 0; left: 0; will-change: transform; }
+.bf svg { display: block; filter: drop-shadow(0 4px 6px rgba(209, 77, 118, 0.25)); }
+.bf-wing-l, .bf-wing-r { transform-box: fill-box; animation: bf-flap 0.42s ease-in-out infinite; }
+.bf-wing-l { transform-origin: right center; }
+.bf-wing-r { transform-origin: left center; }
+@keyframes bf-flap { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.45); } }
+@keyframes bf-fly-a {
+  0% { transform: translate(-8vw, 78vh) rotate(12deg); }
+  20% { transform: translate(18vw, 52vh) rotate(-6deg); }
+  40% { transform: translate(38vw, 64vh) rotate(10deg); }
+  60% { transform: translate(60vw, 30vh) rotate(-10deg); }
+  80% { transform: translate(82vw, 44vh) rotate(6deg); }
+  100% { transform: translate(108vw, 18vh) rotate(-4deg); }
+}
+@keyframes bf-fly-b {
+  0% { transform: translate(108vw, 60vh) rotate(-12deg) scaleX(-1); }
+  25% { transform: translate(74vw, 34vh) rotate(6deg) scaleX(-1); }
+  50% { transform: translate(48vw, 50vh) rotate(-8deg) scaleX(-1); }
+  75% { transform: translate(22vw, 16vh) rotate(8deg) scaleX(-1); }
+  100% { transform: translate(-10vw, 30vh) rotate(-6deg) scaleX(-1); }
+}
+@keyframes bf-fly-c {
+  0% { transform: translate(30vw, 106vh) rotate(-20deg); }
+  30% { transform: translate(44vw, 70vh) rotate(10deg); }
+  55% { transform: translate(28vw, 46vh) rotate(-12deg); }
+  80% { transform: translate(52vw, 14vh) rotate(8deg); }
+  100% { transform: translate(64vw, -10vh) rotate(-6deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bf, .bf-wing-l, .bf-wing-r { animation: none !important; }
+  .bf-layer { display: none; }
 }

@@ -1,3 +1,5 @@
+import { EMBEDDED, showInViewer } from './exportSink';
+
 function escapeCsvCell(value: unknown): string {
   const str = value === null || value === undefined ? '' : String(value);
   if (/[",\n]/.test(str)) {
@@ -15,6 +17,10 @@ export function toCsv(rows: Record<string, unknown>[], columns: { key: string; l
 }
 
 export function downloadCsv(filename: string, csv: string) {
+  if (EMBEDDED) {
+    showInViewer({ kind: 'csv', filename, text: csv });
+    return;
+  }
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

@@ -72,7 +72,7 @@ export const LoginScreen: React.FC = () => {
                   disabled={busy}
                   className="w-full p-4 bg-trainito-coral text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-50"
                 >
-                  Sign in as Demo Admin
+                  Sign in as Demo Coach / Admin
                 </button>
                 <p className="text-[9px] text-slate-400 text-center leading-relaxed pt-1">
                   No Firebase project is connected yet, so Google Sign-In is disabled. Configure

@@ -7,10 +7,13 @@ import type {
   ActivityLog,
   ModuleStat,
   EventType,
+  CapstoneTeam,
+  CapstoneScore,
 } from '../types';
-import { TOTAL_QUESTIONS, MAX_ATTEMPTS, PASSING_PERCENTAGE, BATCHES } from '../types';
+import { TOTAL_QUESTIONS, MAX_ATTEMPTS, PASSING_PERCENTAGE, BATCHES, EMPTY_LINKS } from '../types';
 import { DEMO_QUESTIONS } from '../data/demoQuestionBank';
 import { ReactiveStore } from './reactiveStore';
+import { EMBEDDED } from '../utils/exportSink';
 import type {
   Backend,
   AuthUser,
@@ -20,6 +23,8 @@ import type {
   SubmitAttemptResult,
   ProgressPatch,
 } from './backend';
+import { capstoneScoreId } from './backend';
+import { ALL_RUBRIC_ITEMS } from '../data/capstoneRubric';
 
 // ---------------------------------------------------------------------------
 // Demo Mode backend: a fully in-memory simulation of the real Firebase
@@ -55,6 +60,9 @@ class DemoBackend implements Backend {
   private auditListeners = new Set<() => void>();
   private moduleStats = new ReactiveStore<ModuleStat>();
   private simTimer: ReturnType<typeof setInterval> | null = null;
+  private teams = new ReactiveStore<CapstoneTeam>();
+  private capstoneScores = new ReactiveStore<CapstoneScore>();
+  private teamCounter = 0;
 
   // --- auth -----------------------------------------------------------
   subscribeAuthUser(cb: (user: AuthUser | null) => void): Unsubscribe {
@@ -75,7 +83,7 @@ class DemoBackend implements Backend {
 
   async demoSignIn(role: 'candidate' | 'admin', name?: string): Promise<void> {
     const uid = nextUid();
-    const displayName = name || (role === 'admin' ? 'Demo Admin' : FAKE_NAMES[uidCounter % FAKE_NAMES.length]);
+    const displayName = name || (role === 'admin' ? 'Demo Coach' : FAKE_NAMES[uidCounter % FAKE_NAMES.length]);
     const user: AuthUser = {
       uid,
       name: displayName,
@@ -103,6 +111,8 @@ class DemoBackend implements Backend {
       this.log(user, 'LOGIN', 'Signed in via Demo Mode (Google Sign-In simulated)');
     } else {
       this.log(user, 'ADMIN_LOGIN', 'Admin signed in via Demo Mode');
+      // In shareable demos (embedded page, GitHub Pages), start with sample students and teams to grade.
+      if ((EMBEDDED || import.meta.env.VITE_DEMO_AUTOSEED === 'true') && this.summaries.all().length === 0) void this.seedDemoTraffic(16).then(() => this.seedDemoGrading());
     }
   }
 
@@ -480,6 +490,118 @@ class DemoBackend implements Backend {
     }
 
     this.startLiveSimulation();
+  }
+
+  // --- group capstone grading ---------------------------------------------
+  subscribeTeams(cb: (list: CapstoneTeam[]) => void): Unsubscribe {
+    const push = () => cb(this.teams.all().sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true })));
+    push();
+    return this.teams.subscribe(push);
+  }
+
+  subscribeMyTeams(uid: string, cb: (list: CapstoneTeam[]) => void): Unsubscribe {
+    const push = () => cb(this.teams.all().filter((t) => t.memberUids.includes(uid)));
+    push();
+    return this.teams.subscribe(push);
+  }
+
+  async saveTeam(team: Partial<CapstoneTeam> & { id?: string }): Promise<string> {
+    if (team.id && this.teams.get(team.id)) {
+      const { id, ...patch } = team;
+      this.teams.update(id, patch);
+      return id;
+    }
+    const id = team.id ?? `demo-team-${++this.teamCounter}`;
+    this.teams.set(id, {
+      id,
+      name: team.name ?? 'New Team',
+      project: team.project ?? '',
+      links: { ...EMPTY_LINKS, ...(team.links ?? {}) },
+      batch: team.batch ?? null,
+      memberUids: team.memberUids ?? [],
+      originalBudget: team.originalBudget ?? null,
+      published: team.published ?? false,
+      publishedRaw: team.publishedRaw ?? null,
+      publishedAt: team.publishedAt ?? null,
+      createdAt: Date.now(),
+    });
+    return id;
+  }
+
+  async deleteTeam(teamId: string): Promise<void> {
+    this.teams.delete(teamId);
+    this.capstoneScores.all().filter((s) => s.teamId === teamId).forEach((s) => this.capstoneScores.delete(s.id));
+  }
+
+  subscribeCapstoneScores(cb: (list: CapstoneScore[]) => void): Unsubscribe {
+    const push = () => cb(this.capstoneScores.all());
+    push();
+    return this.capstoneScores.subscribe(push);
+  }
+
+  async saveCapstoneScore(score: Omit<CapstoneScore, 'id' | 'updatedAt'>): Promise<void> {
+    const id = capstoneScoreId(score.teamId, score.judgeUid);
+    this.capstoneScores.set(id, { ...score, id, updatedAt: Date.now() });
+  }
+
+  async deleteCapstoneScore(scoreId: string): Promise<void> {
+    this.capstoneScores.delete(scoreId);
+  }
+
+  /**
+   * Shareable demos only: create the 4 Island Takeover teams and sample score
+   * sheets from two sample judges for the first three teams, so the grading
+   * dashboard has something to show. The fourth team is left for the coach.
+   */
+  private async seedDemoGrading() {
+    if (this.teams.all().length) return;
+    const students = this.summaries.all().filter((s) => s.isDemo !== false);
+    const presets = [
+      { name: 'Group 1', project: 'Langkawi – Luxury + Fun Combo', level: 0.86, budget: 42000 },
+      { name: 'Group 2', project: 'Redang – Crystal Clear Paradise', level: 0.78, budget: 38500 },
+      { name: 'Group 3', project: 'Tioman – Adventure + Exploration', level: 0.68, budget: 33000 },
+      { name: 'Group 4', project: 'Perhentian – Youth Vibes + Budget Friendly', level: 0, budget: 29800 },
+    ];
+    const judges = [
+      { uid: 'demo-judge-1', name: 'Sample Judge A' },
+      { uid: 'demo-judge-2', name: 'Sample Judge B' },
+    ];
+    for (let i = 0; i < presets.length; i++) {
+      const p = presets[i];
+      const id = await this.saveTeam({
+        name: p.name,
+        project: p.project,
+        originalBudget: p.budget,
+        memberUids: students.filter((_, si) => si % presets.length === i).map((s) => s.uid),
+      });
+      if (!p.level) continue;
+      judges.forEach((j, ji) => {
+        const items: Record<string, number> = {};
+        ALL_RUBRIC_ITEMS.forEach((it, k) => {
+          const wobble = (((k * 7 + ji * 3 + i) % 5) - 2) * 0.08;
+          items[it.id] = Math.max(0, Math.min(it.max, Math.round(it.max * (p.level + wobble) * 2) / 2));
+        });
+        void this.saveCapstoneScore({
+          teamId: id,
+          judgeUid: j.uid,
+          judgeName: j.name,
+          items,
+          demoChecks: { chatNormal: true, chatOutOfScope: true, chatUnknown: ji === 0, videoPlayed: true },
+          submissionChecks: {},
+          pitchElements: { anthem: true, usp: true, interestForm: true, foods: true, aiChatbot: true, thingsToDo: true, packages: i !== 2 },
+          videoDuration: '1:15',
+          feedbackResponses: 6 + i,
+          presentationTime: '9:50',
+          challenge: 'Budget cut by 20%. What will you do?',
+          teamResponse: 'Moved staff to the Standard package and dropped one paid activity.',
+          strongestEvidence: 'Clear itemised budget and chatbot test results.',
+          priorityImprovement: 'Cite sources for the stress statistic.',
+          nextStep: 'Re-run the feedback form with the Board.',
+          strength: 'Persuasive opening hook and strong USP.',
+          improvement: 'Show how success will be measured after the trip.',
+        });
+      });
+    }
   }
 
   private startLiveSimulation() {
