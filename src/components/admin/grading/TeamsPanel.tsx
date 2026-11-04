@@ -12,6 +12,8 @@ interface Props {
   summaries: UserSummary[];
   aggregates: TeamAggregate[];
   onOpenScoreSheet: (teamId: string) => void;
+  /** Cohort from the coach check-in; new teams are tagged with it. */
+  defaultBatch?: string | null;
 }
 
 interface Form {
@@ -26,7 +28,7 @@ interface Form {
 
 const emptyForm = (): Form => ({ name: '', project: '', batch: '', originalBudget: '', memberUids: [], links: { ...EMPTY_LINKS } });
 
-export const TeamsPanel: React.FC<Props> = ({ summaries, aggregates, onOpenScoreSheet }) => {
+export const TeamsPanel: React.FC<Props> = ({ summaries, aggregates, onOpenScoreSheet, defaultBatch = null }) => {
   const [form, setForm] = useState<Form | null>(null);
   const [memberSearch, setMemberSearch] = useState('');
   const [busy, setBusy] = useState(false);
@@ -100,7 +102,7 @@ export const TeamsPanel: React.FC<Props> = ({ summaries, aggregates, onOpenScore
       const buckets: string[][] = toCreate.map(() => []);
       pool.forEach((s, i) => buckets[i % Math.max(1, toCreate.length)]?.push(s.uid));
       for (let i = 0; i < toCreate.length; i++) {
-        await backend.saveTeam({ name: toCreate[i].name, project: toCreate[i].project, memberUids: buckets[i] ?? [] });
+        await backend.saveTeam({ name: toCreate[i].name, project: toCreate[i].project, batch: defaultBatch, memberUids: buckets[i] ?? [] });
       }
     });
 
@@ -126,7 +128,7 @@ export const TeamsPanel: React.FC<Props> = ({ summaries, aggregates, onOpenScore
           <button className={btnGhost} onClick={loadPreset} disabled={busy}>
             + Island Takeover Preset (4 teams)
           </button>
-          <button className={btnPrimary} onClick={() => setForm(emptyForm())} disabled={busy}>
+          <button className={btnPrimary} onClick={() => setForm({ ...emptyForm(), batch: defaultBatch ?? '' })} disabled={busy}>
             + New Team
           </button>
         </div>

@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthProvider';
 import { backend } from '../../services';
 import { DEMO_MODE } from '../../firebase';
-import type { UserSummary, Attempt, ActivityLog, ModuleStat, CapstoneTeam, CapstoneScore } from '../../types';
+import type { UserSummary, Attempt, ActivityLog, ModuleStat, CapstoneTeam, CapstoneScore, CoachSession } from '../../types';
+import { COACH_TASKS } from '../../types';
+import { CoachCheckIn } from './CoachCheckIn';
 import { DEFAULT_ASSESSMENT_ID } from '../../types';
 import { OverviewTab } from './OverviewTab';
 import { LiveMonitorTab } from './LiveMonitorTab';
@@ -30,6 +32,44 @@ export const AdminLayout: React.FC = () => {
   const [capstoneScores, setCapstoneScores] = useState<CapstoneScore[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Coach check-in (name, task, cohort) — remembered for this browser tab only.
+  const sessionKey = `caiwp.coachSession.${user?.uid ?? 'anon'}`;
+  const [coach, setCoach] = useState<CoachSession | null>(() => {
+    try {
+      const raw = sessionStorage.getItem(sessionKey);
+      return raw ? (JSON.parse(raw) as CoachSession) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [gradingView, setGradingView] = useState<'dashboard' | 'results' | 'score' | 'teams'>('dashboard');
+
+  const applyCoach = (s: CoachSession) => {
+    setCoach(s);
+    setCheckingIn(false);
+    setBatchFilter(s.cohort);
+    if (s.task === 'theory') setTab('live');
+    else {
+      setTab('grading');
+      setGradingView(s.task === 'capstone' ? 'score' : 'dashboard');
+    }
+    try {
+      sessionStorage.setItem(sessionKey, JSON.stringify(s));
+    } catch {
+      /* storage unavailable: keep in memory only */
+    }
+  };
+
+  // Restore the cohort filter from a remembered check-in.
+  useEffect(() => {
+    if (coach) {
+      setBatchFilter(coach.cohort);
+      if (coach.task !== 'theory') setTab('grading');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const bump = () => setLastSyncAt(Date.now());
@@ -62,14 +102,23 @@ export const AdminLayout: React.FC = () => {
     [auditLog, batchFilter]
   );
 
-  const gradingAggregates = useMemo(() => aggregateTeams(teams, capstoneScores), [teams, capstoneScores]);
+  // Teams in the selected cohort: tagged with that batch, or untagged with a member in it (or no members yet).
+  const visibleTeams = useMemo(() => {
+    if (batchFilter === 'All') return teams;
+    const inCohort = new Set(visibleSummaries.map((s) => s.uid));
+    return teams.filter(
+      (t) => t.batch === batchFilter || (!t.batch && (t.memberUids.length === 0 || t.memberUids.some((u) => inCohort.has(u))))
+    );
+  }, [teams, batchFilter, visibleSummaries]);
+  const gradingAggregates = useMemo(() => aggregateTeams(visibleTeams, capstoneScores), [visibleTeams, capstoneScores]);
   const gradingRows = useMemo(() => buildParticipantRows(visibleSummaries, gradingAggregates), [visibleSummaries, gradingAggregates]);
 
   const batches = useMemo(() => {
     const set = new Set<string>();
     summaries.forEach((s) => s.batch && set.add(s.batch));
+    if (batchFilter !== 'All') set.add(batchFilter);
     return ['All', ...Array.from(set).sort()];
-  }, [summaries]);
+  }, [summaries, batchFilter]);
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -80,6 +129,22 @@ export const AdminLayout: React.FC = () => {
     { id: 'setup', label: 'Setup' },
   ];
 
+  if (!coach || checkingIn) {
+    return (
+      <CoachCheckIn
+        defaultName={user?.name ?? ''}
+        email={user?.email ?? ''}
+        knownCohorts={batches.filter((b) => b !== 'All')}
+        initial={coach}
+        onStart={applyCoach}
+        onSignOut={() => signOutUser()}
+        onCancel={coach ? () => setCheckingIn(false) : undefined}
+      />
+    );
+  }
+
+  const taskLabel = COACH_TASKS.find((t) => t.id === coach.task)?.label ?? coach.task;
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -88,6 +153,16 @@ export const AdminLayout: React.FC = () => {
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
             CAIWP MQA Assessment &middot; Signed in as {user?.email}
           </p>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <span className="px-3 py-1.5 rounded-lg bg-trainito-teal/10 text-[11px] font-black text-slate-700 dark:text-slate-200">👤 {coach.coachName}</span>
+            <span className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300">📋 {taskLabel}</span>
+            <span className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+              🎓 {batchFilter === 'All' ? 'All cohorts' : batchFilter}
+            </span>
+            <button onClick={() => setCheckingIn(true)} className="text-[10px] font-black uppercase tracking-widest text-trainito-teal hover:underline">
+              Change
+            </button>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <ConnectionStatus lastSyncAt={lastSyncAt} />
@@ -162,7 +237,17 @@ export const AdminLayout: React.FC = () => {
 
       {tab === 'overview' && <OverviewTab summaries={visibleSummaries} moduleStats={moduleStats} />}
       {tab === 'grading' && (
-        <GradingTab summaries={visibleSummaries} teams={teams} scores={capstoneScores} aggregates={gradingAggregates} rows={gradingRows} />
+        <GradingTab
+          summaries={visibleSummaries}
+          teams={visibleTeams}
+          scores={capstoneScores}
+          aggregates={gradingAggregates}
+          rows={gradingRows}
+          coachName={coach.coachName}
+          cohort={batchFilter}
+          view={gradingView}
+          onViewChange={setGradingView}
+        />
       )}
       {tab === 'live' && <LiveMonitorTab attempts={visibleAttempts} />}
       {tab === 'candidates' && <CandidatesTab summaries={visibleSummaries} />}

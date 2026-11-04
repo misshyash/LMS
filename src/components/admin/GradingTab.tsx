@@ -5,9 +5,10 @@ import type { ParticipantRow, TeamAggregate } from '../../utils/grading';
 import { ResultsPanel } from './grading/ResultsPanel';
 import { ScoreSheetPanel } from './grading/ScoreSheetPanel';
 import { TeamsPanel } from './grading/TeamsPanel';
+import { DashboardPanel } from './grading/DashboardPanel';
 import { AiGraderLauncher } from '../shared/AiGraderGuide';
 
-type View = 'results' | 'score' | 'teams';
+export type GradingView = 'dashboard' | 'results' | 'score' | 'teams';
 
 interface Props {
   summaries: UserSummary[];
@@ -15,6 +16,11 @@ interface Props {
   scores: CapstoneScore[];
   aggregates: TeamAggregate[];
   rows: ParticipantRow[];
+  /** Name entered at coach check-in; used as the assessor on score sheets. */
+  coachName: string;
+  cohort: string;
+  view: GradingView;
+  onViewChange: (v: GradingView) => void;
 }
 
 /**
@@ -22,9 +28,9 @@ interface Props {
  * CAIWP Day 5 Marking Scheme:
  *   Final = capstone raw × 0.60 + theory correct ÷ 30 × 40, pass at 75.
  */
-export const GradingTab: React.FC<Props> = ({ summaries, teams, scores, aggregates, rows }) => {
+export const GradingTab: React.FC<Props> = ({ summaries, teams, scores, aggregates, rows, coachName, cohort, view, onViewChange: setView }) => {
   const { user } = useAuth();
-  const [view, setView] = useState<View>('results');
+  const judge = user ? { ...user, name: coachName || user.name } : null;
   const [teamId, setTeamId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -37,7 +43,8 @@ export const GradingTab: React.FC<Props> = ({ summaries, teams, scores, aggregat
     setView('score');
   };
 
-  const views: { id: View; label: string }[] = [
+  const views: { id: GradingView; label: string }[] = [
+    { id: 'dashboard', label: 'Dashboard' },
     { id: 'results', label: 'Final Results' },
     { id: 'score', label: 'Score Sheet' },
     { id: 'teams', label: 'Teams & Submissions' },
@@ -68,11 +75,14 @@ export const GradingTab: React.FC<Props> = ({ summaries, teams, scores, aggregat
         </div>
       </div>
 
-      {view === 'results' && <ResultsPanel rows={rows} aggregates={aggregates} scores={scores} onOpenScoreSheet={openScoreSheet} />}
-      {view === 'score' && user && (
-        <ScoreSheetPanel judge={user} aggregates={aggregates} scores={scores} teamId={teamId} onSelectTeam={setTeamId} />
+      {view === 'dashboard' && (
+        <DashboardPanel rows={rows} aggregates={aggregates} scores={scores} onOpenScoreSheet={openScoreSheet} onOpenResults={() => setView('results')} />
       )}
-      {view === 'teams' && <TeamsPanel summaries={summaries} aggregates={aggregates} onOpenScoreSheet={openScoreSheet} />}
+      {view === 'results' && <ResultsPanel rows={rows} aggregates={aggregates} scores={scores} onOpenScoreSheet={openScoreSheet} />}
+      {view === 'score' && judge && (
+        <ScoreSheetPanel judge={judge} aggregates={aggregates} scores={scores} teamId={teamId} onSelectTeam={setTeamId} />
+      )}
+      {view === 'teams' && <TeamsPanel summaries={summaries} aggregates={aggregates} onOpenScoreSheet={openScoreSheet} defaultBatch={cohort === 'All' ? null : cohort} />}
     </div>
   );
 };

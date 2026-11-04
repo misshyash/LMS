@@ -185,3 +185,35 @@ export interface CapstoneScore {
   improvement: string;
   updatedAt: number | null;
 }
+
+// ---------------------------------------------------------------------------
+// Coach check-in (admin portal)
+// ---------------------------------------------------------------------------
+
+export type CoachTask = 'capstone' | 'theory' | 'final';
+
+export const COACH_TASKS: { id: CoachTask; label: string; description: string }[] = [
+  {
+    id: 'capstone',
+    label: 'Group Capstone – Win the Board: Island Takeover Pitch',
+    description: 'Score team pitches on the 100-mark rubric',
+  },
+  {
+    id: 'theory',
+    label: 'Theory Examination – 30 questions',
+    description: 'Monitor the live exam and individual theory results',
+  },
+  {
+    id: 'final',
+    label: 'Final Results – Capstone 60 + Theory 40',
+    description: 'Review combined totals, publish and export results',
+  },
+];
+
+export interface CoachSession {
+  coachName: string;
+  task: CoachTask;
+  /** Batch name, or 'All' for every cohort. */
+  cohort: string;
+  startedAt: number;
+}
