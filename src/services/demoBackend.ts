@@ -13,6 +13,7 @@ import type {
 import { TOTAL_QUESTIONS, MAX_ATTEMPTS, PASSING_PERCENTAGE, BATCHES, EMPTY_LINKS } from '../types';
 import { DEMO_QUESTIONS } from '../data/demoQuestionBank';
 import { ReactiveStore } from './reactiveStore';
+import { EMBEDDED } from '../utils/exportSink';
 import type {
   Backend,
   AuthUser,
@@ -109,6 +110,8 @@ class DemoBackend implements Backend {
       this.log(user, 'LOGIN', 'Signed in via Demo Mode (Google Sign-In simulated)');
     } else {
       this.log(user, 'ADMIN_LOGIN', 'Admin signed in via Demo Mode');
+      // In the shareable embedded demo, start with sample students so there is something to grade.
+      if (EMBEDDED && this.summaries.all().length === 0) void this.seedDemoTraffic(12);
     }
   }
 

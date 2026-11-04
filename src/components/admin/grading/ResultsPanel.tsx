@@ -114,7 +114,7 @@ export const ResultsPanel: React.FC<Props> = ({ rows, aggregates, onOpenScoreShe
         title="Final Participant Results"
         right={
           <div className="flex flex-wrap gap-2">
-            <button className={btnGhost} onClick={() => openPrintable(buildResultSheetHtml(filtered.map(sheetData)))} disabled={filtered.length === 0}>
+            <button className={btnGhost} onClick={() => openPrintable(buildResultSheetHtml(filtered.map(sheetData)), 'Result Sheets')} disabled={filtered.length === 0}>
               Print All Result Sheets
             </button>
             <button className={btnPrimary} onClick={exportCsv} disabled={filtered.length === 0}>
@@ -208,7 +208,7 @@ export const ResultsPanel: React.FC<Props> = ({ rows, aggregates, onOpenScoreShe
                     />
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button className={btnGhost} onClick={() => openPrintable(buildResultSheetHtml([sheetData(r)]))}>
+                    <button className={btnGhost} onClick={() => openPrintable(buildResultSheetHtml([sheetData(r)]), `Result Sheet – ${r.name}`)}>
                       Result Sheet
                     </button>
                   </td>

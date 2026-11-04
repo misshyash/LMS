@@ -92,7 +92,7 @@ export const AdminLayout: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <ConnectionStatus lastSyncAt={lastSyncAt} />
           <button
-            onClick={() => openPrintable(buildResultsDocHtml(gradingRows, gradingAggregates))}
+            onClick={() => openPrintable(buildResultsDocHtml(gradingRows, gradingAggregates), 'Results Doc')}
             title="Printable results report — save as PDF from the print dialog"
             className="px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/30"
           >

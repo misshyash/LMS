@@ -9,6 +9,7 @@ import { CandidateDashboard } from './components/candidate/CandidateDashboard';
 import { AssessmentRunner } from './components/candidate/AssessmentRunner';
 import { ResultsScreen } from './components/candidate/ResultsScreen';
 import { AdminLayout } from './components/admin/AdminLayout';
+import { ExportViewer } from './components/shared/ExportViewer';
 
 type CandidateView = { name: 'dashboard' } | { name: 'assessment'; attemptId: string } | { name: 'results'; attemptId: string };
 
@@ -57,6 +58,7 @@ const App: React.FC = () => (
     <div className={DEMO_MODE ? 'pt-7' : ''}>
       <Shell />
     </div>
+    <ExportViewer />
   </AuthProvider>
 );
 

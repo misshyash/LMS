@@ -23,6 +23,7 @@ import {
 } from '../data/capstoneRubric';
 import type { CapstoneScore, CapstoneTeam, UserSummary } from '../types';
 import { TOTAL_QUESTIONS } from '../types';
+import { EMBEDDED, showInViewer } from './exportSink';
 
 /** Clamp to 0..max and snap to the nearest 0.5. */
 export function normaliseMark(value: number, max: number): number {
@@ -270,9 +271,14 @@ export function buildResultSheetHtml(rows: ResultSheetData[]): string {
 </body></html>`;
 }
 
-export function openPrintable(html: string) {
+export function openPrintable(html: string, title = 'CAIWP Results') {
+  if (EMBEDDED) {
+    showInViewer({ kind: 'html', title, html });
+    return;
+  }
   const url = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
   const w = window.open(url, '_blank');
-  if (!w) alert('Please allow pop-ups to print result sheets.');
+  // Pop-up blocked: show it in the in-app viewer instead.
+  if (!w) showInViewer({ kind: 'html', title, html });
   setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }

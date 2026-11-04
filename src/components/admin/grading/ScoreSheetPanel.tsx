@@ -12,6 +12,7 @@ import {
   SUBMISSION_CHECKS,
   isFreeMark,
 } from '../../../data/capstoneRubric';
+import { useConfirm } from '../../shared/ConfirmDialog';
 import { Card, LinkChips, btnTeal, btnGhost, inputCls, inputBase, labelCls } from './ui';
 
 type Draft = Omit<CapstoneScore, 'id' | 'updatedAt'>;
@@ -56,6 +57,7 @@ export const ScoreSheetPanel: React.FC<Props> = ({ judge, aggregates, scores, te
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmEl, ask] = useConfirm();
 
   // Load the judge's sheet when switching team (or when it first arrives).
   useEffect(() => {
@@ -113,6 +115,7 @@ export const ScoreSheetPanel: React.FC<Props> = ({ judge, aggregates, scores, te
 
   return (
     <div className="space-y-6">
+      {confirmEl}
       {/* Team picker */}
       <div className="flex flex-wrap gap-2">
         {aggregates.map((a) => {
@@ -120,8 +123,9 @@ export const ScoreSheetPanel: React.FC<Props> = ({ judge, aggregates, scores, te
           return (
             <button
               key={a.team.id}
-              onClick={() => {
-                if (dirty && !confirm('You have unsaved marks. Discard them?')) return;
+              onClick={async () => {
+                if (a.team.id === teamId) return;
+                if (dirty && !(await ask('You have unsaved marks on this sheet. Discard them?', { confirmLabel: 'Discard', danger: true }))) return;
                 setDirty(false);
                 onSelectTeam(a.team.id);
               }}
@@ -337,7 +341,7 @@ export const ScoreSheetPanel: React.FC<Props> = ({ judge, aggregates, scores, te
                 <button
                   className={`${btnGhost} w-full mt-4`}
                   onClick={async () => {
-                    if (!confirm('Delete your score sheet for this team?')) return;
+                    if (!(await ask('Delete your score sheet for this team?', { confirmLabel: 'Delete', danger: true }))) return;
                     await backend.deleteCapstoneScore(existing.id);
                     setDirty(false);
                   }}

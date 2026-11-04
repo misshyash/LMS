@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CAPSTONE_RUBRIC, ALL_RUBRIC_ITEMS, FREE_MARK_ITEM_IDS } from '../../data/capstoneRubric';
+import { EMBEDDED, showInViewer, saveBlob } from '../../utils/exportSink';
 
 /**
  * "Meet your AI Grader" — a short, personalised, narrated video-style
@@ -532,15 +533,10 @@ export const AiGraderGuide: React.FC<GuideProps> = ({ onClose, participant = nul
     setRecording(0);
     try {
       const { blob, ext } = await recordVideo(steps, current, setRecording);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
       const slug = (current?.name || 'participants').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      a.href = url;
-      a.download = `caiwp-ai-grader-${slug}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 30_000);
+      const filename = `caiwp-ai-grader-${slug}.${ext}`;
+      if (EMBEDDED) showInViewer({ kind: 'video', filename, blob });
+      else saveBlob(filename, blob);
     } catch (e: any) {
       setRecError(e?.message ?? 'Could not record the video.');
     } finally {

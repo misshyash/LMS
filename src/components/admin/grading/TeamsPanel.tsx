@@ -5,6 +5,7 @@ import { EMPTY_LINKS } from '../../../types';
 import type { TeamAggregate } from '../../../utils/grading';
 import { fmt2 } from '../../../utils/grading';
 import { ISLAND_TAKEOVER_TEAMS } from '../../../data/capstoneRubric';
+import { useConfirm } from '../../shared/ConfirmDialog';
 import { Card, LinkChips, LINK_FIELDS, btnPrimary, btnTeal, btnGhost, inputCls, inputBase, labelCls, safeUrl } from './ui';
 
 interface Props {
@@ -30,6 +31,7 @@ export const TeamsPanel: React.FC<Props> = ({ summaries, aggregates, onOpenScore
   const [memberSearch, setMemberSearch] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmEl, ask] = useConfirm();
 
   const teamOfUid = useMemo(() => {
     const m = new Map<string, CapstoneTeam>();
@@ -115,6 +117,7 @@ export const TeamsPanel: React.FC<Props> = ({ summaries, aggregates, onOpenScore
 
   return (
     <div className="space-y-6">
+      {confirmEl}
       <div className="flex flex-wrap gap-3 justify-between items-center">
         <p className="text-xs font-bold text-slate-500">
           {aggregates.length} team(s) · {summaries.length - unassigned.length}/{summaries.length} students assigned
@@ -280,7 +283,10 @@ export const TeamsPanel: React.FC<Props> = ({ summaries, aggregates, onOpenScore
                 <button
                   className={`${btnGhost} text-rose-500`}
                   disabled={busy}
-                  onClick={() => confirm(`Delete ${a.team.name} and all its score sheets?`) && run(() => backend.deleteTeam(a.team.id))}
+                  onClick={async () =>
+                    (await ask(`Delete ${a.team.name} and all its score sheets?`, { confirmLabel: 'Delete team', danger: true })) &&
+                    run(() => backend.deleteTeam(a.team.id))
+                  }
                 >
                   Delete
                 </button>
