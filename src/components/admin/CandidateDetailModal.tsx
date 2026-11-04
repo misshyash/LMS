@@ -162,7 +162,7 @@ export const CandidateDetailModal: React.FC<Props> = ({ uid, onClose }) => {
                 <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v: number) => `${v}%`} labelFormatter={(l, p) => p?.[0]?.payload?.fullName ?? l} />
-                <Bar dataKey="percentage" fill="#66c2bd" radius={[8, 8, 0, 0]} />
+                <Bar dataKey="percentage" fill="#5c8a3f" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

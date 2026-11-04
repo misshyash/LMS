@@ -193,7 +193,7 @@ export function buildResultsDocHtml(rows: ParticipantRow[], aggregates: TeamAggr
   .doc{max-width:1000px;margin:0 auto}
   header{background:#0f172a;color:#fff;padding:22px 28px;border-radius:14px;display:flex;justify-content:space-between;align-items:center}
   header h1{margin:0;font-size:20px;letter-spacing:.06em;text-transform:uppercase} header p{margin:4px 0 0;font-size:11px;color:#94a3b8}
-  .brand{color:#66c2bd;font-weight:900}
+  .brand{color:#d14d76;font-weight:900}
   .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin:18px 0}
   .kpi{border:1px solid #e2e8f0;border-radius:12px;padding:12px} .kpi .l{font-size:9px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em}
   .kpi .v{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums}

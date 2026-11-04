@@ -149,7 +149,7 @@ export const AdminLayout: React.FC = () => {
     <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Admin Portal</h1>
+          <h1 className="text-3xl font-black uppercase tracking-tighter text-slate-900 dark:text-white">Admin Portal <span className="text-2xl align-middle">🍓🍵</span></h1>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">
             CAIWP MQA Assessment &middot; Signed in as {user?.email}
           </p>

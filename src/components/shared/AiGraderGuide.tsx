@@ -154,7 +154,7 @@ const stepDurationMs = (s: Step) => Math.max(4500, s.speech.length * 45);
 
 const TONE_CLS: Record<Tone, string> = {
   teal: 'bg-trainito-teal/10 text-trainito-teal border-trainito-teal/30',
-  sky: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/30',
+  sky: 'bg-strawberry-50 text-strawberry-700 border-strawberry-200 dark:bg-strawberry-500/10 dark:text-strawberry-300 dark:border-strawberry-500/30',
   dark: 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900',
   green: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30',
   red: 'bg-rose-50 text-rose-600 border-rose-200 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/30',
@@ -219,13 +219,13 @@ const NameBar: React.FC<{ p: GuideParticipant | null }> = ({ p }) => (
 const W = 1280;
 const H = 720;
 const CANVAS_TONES: Record<Tone, { bg: string; fg: string; border: string }> = {
-  teal: { bg: '#e8f6f5', fg: '#2f8f89', border: '#9fd9d5' },
-  sky: { bg: '#f0f9ff', fg: '#0369a1', border: '#bae6fd' },
-  dark: { bg: '#0f172a', fg: '#ffffff', border: '#0f172a' },
+  teal: { bg: '#eef6e7', fg: '#476b31', border: '#c9e1b4' },
+  sky: { bg: '#fff1f5', fg: '#b03a61', border: '#ffc6d6' },
+  dark: { bg: '#2b1f25', fg: '#ffffff', border: '#2b1f25' },
   green: { bg: '#ecfdf5', fg: '#047857', border: '#a7f3d0' },
   red: { bg: '#fff1f2', fg: '#e11d48', border: '#fecdd3' },
 };
-const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+const FONT = '"M PLUS Rounded 1c", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
@@ -254,18 +254,18 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxW: number): string
 
 function drawSlide(ctx: CanvasRenderingContext2D, step: Step, index: number, total: number, p: GuideParticipant | null, progress: number) {
   // Background + header
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = '#fff6f8';
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#0f172a';
+  ctx.fillStyle = '#2b1f25';
   ctx.fillRect(0, 0, W, 76);
-  ctx.fillStyle = '#66c2bd';
+  ctx.fillStyle = '#5c8a3f';
   ctx.beginPath();
   ctx.arc(52, 38, 22, 0, Math.PI * 2);
   ctx.fill();
   ctx.font = `28px ${FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('🤖', 52, 40);
+  ctx.fillText('🍓', 52, 40);
   ctx.textAlign = 'left';
   ctx.fillStyle = '#ffffff';
   ctx.font = `900 20px ${FONT}`;
@@ -274,12 +274,12 @@ function drawSlide(ctx: CanvasRenderingContext2D, step: Step, index: number, tot
   ctx.font = `700 14px ${FONT}`;
   ctx.fillText(`Group Capstone + Theory Examination · Step ${index + 1} of ${total}`, 88, 54);
   ctx.textAlign = 'right';
-  ctx.fillStyle = '#66c2bd';
+  ctx.fillStyle = '#5c8a3f';
   ctx.font = `900 16px ${FONT}`;
   ctx.fillText('TRAINITO ACADEMY', W - 36, 40);
 
   // Participant bar
-  ctx.fillStyle = '#e8f6f5';
+  ctx.fillStyle = '#ffe2ea';
   ctx.fillRect(0, 76, W, 44);
   ctx.textAlign = 'left';
   ctx.fillStyle = '#334155';
@@ -292,7 +292,7 @@ function drawSlide(ctx: CanvasRenderingContext2D, step: Step, index: number, tot
   // Progress bar
   ctx.fillStyle = '#f1f5f9';
   ctx.fillRect(0, 120, W, 6);
-  ctx.fillStyle = '#66c2bd';
+  ctx.fillStyle = '#5c8a3f';
   ctx.fillRect(0, 120, W * ((index + progress) / total), 6);
 
   // Title
@@ -332,7 +332,7 @@ function drawSlide(ctx: CanvasRenderingContext2D, step: Step, index: number, tot
     let y = top + Math.max(0, (290 - totalH) / 2);
     step.rows.forEach((row, ri) => {
       if (ri > 0) {
-        ctx.fillStyle = '#66c2bd';
+        ctx.fillStyle = '#5c8a3f';
         ctx.font = `900 28px ${FONT}`;
         ctx.textAlign = 'center';
         ctx.fillText('↓', W / 2, y - gapY / 2);
@@ -345,7 +345,7 @@ function drawSlide(ctx: CanvasRenderingContext2D, step: Step, index: number, tot
       row.boxes.forEach((b, bi) => {
         if (bi > 0) {
           if (row.join === '→') {
-            ctx.fillStyle = '#66c2bd';
+            ctx.fillStyle = '#5c8a3f';
             ctx.font = `900 34px ${FONT}`;
             ctx.textAlign = 'center';
             ctx.fillText('→', x + joinW / 2, y + rowH / 2);

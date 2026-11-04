@@ -38,8 +38,10 @@ function useChartTheme() {
     return () => mq.removeEventListener?.('change', h);
   }, []);
   return dark
-    ? { capstone: '#1fa394', theory: '#5b84e6', pass: '#34d399', fail: '#fb7185', grid: '#1e293b', axis: '#94a3b8', ink: '#e2e8f0', surface: '#0f172a', ref: '#f59e0b' }
-    : { capstone: '#2a9d8f', theory: '#3b6fd6', pass: '#059669', fail: '#e11d48', grid: '#eef2f6', axis: '#64748b', ink: '#0f172a', surface: '#ffffff', ref: '#d97706' };
+    ? // Strawberry matcha, dark (validated vs #241a1f): matcha / strawberry; pass/fail stay reserved status colours.
+      { capstone: '#48752a', theory: '#da6a8d', pass: '#34d399', fail: '#fb7185', grid: '#3a2c33', axis: '#b6979f', ink: '#fdecf0', surface: '#2b1f25', ref: '#f59e0b' }
+    : // Strawberry matcha, light (validated vs #fffafb).
+      { capstone: '#4a7a28', theory: '#f08aa6', pass: '#059669', fail: '#e11d48', grid: '#f6e4e9', axis: '#8f727b', ink: '#2b1f25', surface: '#fffafb', ref: '#d97706' };
 }
 
 const tooltipStyle = (t: ReturnType<typeof useChartTheme>) => ({

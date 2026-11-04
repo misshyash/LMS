@@ -252,7 +252,7 @@ export function buildResultSheetHtml(rows: ResultSheetData[]): string {
   header{background:#0f172a;color:#fff;padding:20px 28px;display:flex;justify-content:space-between;align-items:center}
   header h1{margin:0;font-size:17px;letter-spacing:.08em;text-transform:uppercase}
   header p{margin:4px 0 0;font-size:10px;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase}
-  .brand{color:#66c2bd;font-weight:900;font-size:12px}
+  .brand{color:#d14d76;font-weight:900;font-size:12px}
   section{padding:18px 28px;border-bottom:1px solid #f1f5f9;font-size:13px}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px}
   .lbl{font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;margin-bottom:4px}

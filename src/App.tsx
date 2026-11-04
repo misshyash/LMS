@@ -10,6 +10,7 @@ import { AssessmentRunner } from './components/candidate/AssessmentRunner';
 import { ResultsScreen } from './components/candidate/ResultsScreen';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { ExportViewer } from './components/shared/ExportViewer';
+import { Butterflies } from './components/shared/Butterflies';
 
 type CandidateView = { name: 'dashboard' } | { name: 'assessment'; attemptId: string } | { name: 'results'; attemptId: string };
 
@@ -58,6 +59,7 @@ const App: React.FC = () => (
     <div className={DEMO_MODE ? 'pt-7' : ''}>
       <Shell />
     </div>
+    <Butterflies />
     <ExportViewer />
   </AuthProvider>
 );
